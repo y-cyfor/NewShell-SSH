@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useActivityStore } from '../../stores/activityStore';
 import { Server, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
@@ -6,8 +7,9 @@ interface ActivityBarProps {
   onToggleSidebar: () => void;
 }
 
-export function ActivityBar({ sidebarCollapsed, onToggleSidebar }: ActivityBarProps) {
-  const { activeIcon, toggleIcon } = useActivityStore();
+export const ActivityBar = memo(function ActivityBar({ sidebarCollapsed, onToggleSidebar }: ActivityBarProps) {
+  const activeIcon = useActivityStore((s) => s.activeIcon);
+  const toggleIcon = useActivityStore((s) => s.toggleIcon);
 
   return (
     <div
@@ -54,7 +56,7 @@ export function ActivityBar({ sidebarCollapsed, onToggleSidebar }: ActivityBarPr
       />
     </div>
   );
-}
+});
 
 function ActivityBarButton({
   icon,

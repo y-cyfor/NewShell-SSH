@@ -11,7 +11,8 @@ interface Props {
 }
 
 export function AddConnectionModal({ connection, onClose }: Props) {
-  const { addConnection, updateConnection } = useConnectionStore();
+  const addConnection = useConnectionStore((s) => s.addConnection);
+  const updateConnection = useConnectionStore((s) => s.updateConnection);
   const isEdit = !!connection;
 
   const [form, setForm] = useState({

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { memo, useEffect, useState, useMemo } from 'react';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { useGroupStore } from '../../stores/groupStore';
@@ -22,10 +22,19 @@ import {
   Edit,
 } from 'lucide-react';
 
-export function ServerListPanel() {
-  const { connections, loadConnections, deleteConnection, syncToServer } = useConnectionStore();
-  const { addTab } = useTerminalStore();
-  const { groups, loadGroups, createGroup, renameGroup, deleteGroup, addConnectionToGroup, removeConnectionFromGroup } = useGroupStore();
+export const ServerListPanel = memo(function ServerListPanel() {
+  const connections = useConnectionStore((s) => s.connections);
+  const loadConnections = useConnectionStore((s) => s.loadConnections);
+  const deleteConnection = useConnectionStore((s) => s.deleteConnection);
+  const syncToServer = useConnectionStore((s) => s.syncToServer);
+  const addTab = useTerminalStore((s) => s.addTab);
+  const groups = useGroupStore((s) => s.groups);
+  const loadGroups = useGroupStore((s) => s.loadGroups);
+  const createGroup = useGroupStore((s) => s.createGroup);
+  const renameGroup = useGroupStore((s) => s.renameGroup);
+  const deleteGroup = useGroupStore((s) => s.deleteGroup);
+  const addConnectionToGroup = useGroupStore((s) => s.addConnectionToGroup);
+  const removeConnectionFromGroup = useGroupStore((s) => s.removeConnectionFromGroup);
   const [showAdd, setShowAdd] = useState(false);
   const [editConn, setEditConn] = useState<Connection | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -416,4 +425,4 @@ export function ServerListPanel() {
       )}
     </div>
   );
-}
+});

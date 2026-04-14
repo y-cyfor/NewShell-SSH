@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { FileInfo } from '../../types';
 import { useFileTransferStore, TransferTask, formatSpeed } from '../../stores/fileTransferStore';
 import { useDownloadSettingsStore } from '../../stores/downloadSettingsStore';
@@ -20,7 +20,7 @@ interface FileItem extends FileInfo {
 const MIN_TRANSFER_HEIGHT = 100;
 const DEFAULT_TRANSFER_HEIGHT = 180;
 
-export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
+export const EnhancedFileTreePanel = memo(function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
   const connId = rawConnId ? rawConnId.replace(/[^\w-]/g, '') : '';
   
   const [path, setPath] = useState('/');
@@ -40,16 +40,15 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
   const [savingFile, setSavingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { 
-    transfers, 
-    uploadFile, 
-    downloadFile, 
-    pauseTransfer, 
-    resumeTransfer, 
-    removeTransfer 
-  } = useFileTransferStore();
+  const transfers = useFileTransferStore((s) => s.transfers);
+  const uploadFile = useFileTransferStore((s) => s.uploadFile);
+  const downloadFile = useFileTransferStore((s) => s.downloadFile);
+  const pauseTransfer = useFileTransferStore((s) => s.pauseTransfer);
+  const resumeTransfer = useFileTransferStore((s) => s.resumeTransfer);
+  const removeTransfer = useFileTransferStore((s) => s.removeTransfer);
   
-  const { askBeforeDownload, downloadPath } = useDownloadSettingsStore();
+  const askBeforeDownload = useDownloadSettingsStore((s) => s.askBeforeDownload);
+  const downloadPath = useDownloadSettingsStore((s) => s.downloadPath);
 
   // 监听下载事件，自动展开传输面板
   useEffect(() => {
@@ -577,9 +576,9 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
       )}
     </div>
   );
-}
+});
 
-function FileRow({
+const FileRow = memo(function FileRow({
   file,
   isSelected,
   onClick,
@@ -654,9 +653,9 @@ function FileRow({
       )}
     </div>
   );
-}
+});
 
-function TransferItem({ 
+const TransferItem = memo(function TransferItem({
   transfer, 
   onPause, 
   onResume, 
@@ -784,4 +783,4 @@ function TransferItem({
       </div>
     </div>
   );
-}
+});

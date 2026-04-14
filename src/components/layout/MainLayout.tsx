@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { TitleBar } from "./TitleBar";
 import { ActivityBar } from "./ActivityBar";
 import { SidebarPanel } from "./SidebarPanel";
@@ -18,7 +18,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 const MIN_SIDEBAR_WIDTH = 340;
 const MAX_SIDEBAR_WIDTH = 500;
 
-export function MainLayout() {
+export const MainLayout = memo(function MainLayout() {
   const [showSettings, setShowSettings] = useState(false);
   const [showFileTree, setShowFileTree] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -33,9 +33,11 @@ export function MainLayout() {
     sidebarWidthRef.current = sidebarWidth;
   }, [sidebarWidth]);
 
-  const { tabs, activeTabId, initDefaultTabs } = useTerminalStore();
-  const { loadConnections } = useConnectionStore();
-  const { loadGroups } = useGroupStore();
+  const tabs = useTerminalStore((s) => s.tabs);
+  const activeTabId = useTerminalStore((s) => s.activeTabId);
+  const initDefaultTabs = useTerminalStore((s) => s.initDefaultTabs);
+  const loadConnections = useConnectionStore((s) => s.loadConnections);
+  const loadGroups = useGroupStore((s) => s.loadGroups);
   const theme = useThemeStore((s) => s.theme);
 
   // Global keyboard shortcuts
@@ -184,4 +186,4 @@ export function MainLayout() {
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </div>
   );
-}
+});

@@ -7,7 +7,11 @@ interface ShortcutConfig {
 }
 
 export function useKeyboardShortcuts(config?: ShortcutConfig) {
-  const { tabs, activeTabId, removeTab, setActiveTab, addTab } = useTerminalStore();
+  const tabs = useTerminalStore((s) => s.tabs);
+  const activeTabId = useTerminalStore((s) => s.activeTabId);
+  const removeTab = useTerminalStore((s) => s.removeTab);
+  const setActiveTab = useTerminalStore((s) => s.setActiveTab);
+  const addTab = useTerminalStore((s) => s.addTab);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

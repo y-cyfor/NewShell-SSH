@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { memo, useEffect, useState, useMemo } from 'react';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { AddConnectionModal } from './AddConnectionModal';
@@ -24,9 +24,12 @@ import {
   X,
 } from 'lucide-react';
 
-export function ConnectionList() {
-  const { connections, loadConnections, deleteConnection } = useConnectionStore();
-  const { addTab, connectionStatus } = useTerminalStore();
+export const ConnectionList = memo(function ConnectionList() {
+  const connections = useConnectionStore((s) => s.connections);
+  const loadConnections = useConnectionStore((s) => s.loadConnections);
+  const deleteConnection = useConnectionStore((s) => s.deleteConnection);
+  const addTab = useTerminalStore((s) => s.addTab);
+  const connectionStatus = useTerminalStore((s) => s.connectionStatus);
   const [showAdd, setShowAdd] = useState(false);
   const [editConn, setEditConn] = useState<Connection | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -355,4 +358,4 @@ export function ConnectionList() {
       )}
     </div>
   );
-}
+});

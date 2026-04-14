@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { TerminalPanel } from './TerminalPanel';
 import { AgentTerminalPanel } from './AgentTerminalPanel';
@@ -6,8 +6,12 @@ import { ServerListPanel } from '../server/ServerListPanel';
 import { SnippetsPanel } from './SnippetsPanel';
 import { X, Plus, Bot, Code } from 'lucide-react';
 
-export function TerminalTabs() {
-  const { tabs, activeTabId, setActiveTab, removeTab, addTab } = useTerminalStore();
+export const TerminalTabs = memo(function TerminalTabs() {
+  const tabs = useTerminalStore((s) => s.tabs);
+  const activeTabId = useTerminalStore((s) => s.activeTabId);
+  const setActiveTab = useTerminalStore((s) => s.setActiveTab);
+  const removeTab = useTerminalStore((s) => s.removeTab);
+  const addTab = useTerminalStore((s) => s.addTab);
   const [showSnippets, setShowSnippets] = useState(false);
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const terminalInputRef = useRef<HTMLInputElement>(null);
@@ -111,4 +115,4 @@ export function TerminalTabs() {
       )}
     </div>
   );
-}
+});
