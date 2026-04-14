@@ -1,8 +1,10 @@
+> **🤖 AI VibeCoding 试验项目** — 使用 [OpenCode](https://opencode.sh) / [Claude Code](https://claude.ai/code) 驱动开发，大模型为 小米 Mimo-Pro / Qwen3.6-Plus
+
 # NewShell - 免费开源 SSH 管理工具
 
 > 永久免费 | 跨平台 | 本地优先 | AI 辅助
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/your-username/newshell)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/y-cyfor/NewShell-SSH)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-ffc131.svg)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org)
@@ -59,7 +61,7 @@ NewShell 是一款免费、开源、跨平台的 SSH 管理工具，解决市面
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/newshell.git
+git clone https://github.com/y-cyfor/NewShell-SSH.git
 cd NewShell
 
 # 安装前端依赖
@@ -74,20 +76,19 @@ cd ..
 ### 开发
 
 ```bash
-# Windows - 使用开发脚本
-dev.bat
-
-# 或手动启动
+# 启动 Tauri 开发
 npm run tauri dev
 ```
 
 ### 构建
 
 ```bash
-# Windows - 使用构建脚本
-build.ps1
+# 构建 Go 后端
+cd server
+go build -o newshell-server.exe .
+cd ..
 
-# 或手动构建
+# 构建 Tauri 应用
 npm run tauri build
 ```
 
@@ -96,9 +97,6 @@ npm run tauri build
 ```bash
 # 生产环境部署
 docker-compose up -d
-
-# 或使用部署脚本
-./deploy.sh
 ```
 
 ## 项目结构
@@ -118,11 +116,7 @@ NewShell/
 │   ├── handlers/               # API处理器
 │   ├── services/               # 业务逻辑
 │   └── models/                 # 数据模型
-├── nginx/                      # Nginx配置
-├── dev.bat                     # 开发启动脚本
-├── build.ps1                   # Windows构建脚本
-├── deploy.sh                   # Linux部署脚本
-└── clean.bat                   # 清理脚本
+└── nginx/                      # Nginx配置
 ```
 
 ## 配置
@@ -178,9 +172,8 @@ cp .env.example .env
 
 ## 支持
 
-- 提交 [Issue](https://github.com/your-username/newshell/issues)
-- 讨论 [Discussions](https://github.com/your-username/newshell/discussions)
-- 邮件：your-email@example.com
+- 提交 [Issue](https://github.com/y-cyfor/NewShell-SSH/issues)
+- 邮件：cyfor@foxmail.com
 
 ---
 
