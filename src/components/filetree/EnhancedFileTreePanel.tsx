@@ -1,0 +1,570 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { FileInfo } from '../../types';
+import { useFileTransferStore, TransferTask, formatSpeed } from '../../stores/fileTransferStore';
+import { useDownloadSettingsStore } from '../../stores/downloadSettingsStore';
+import { getFileIcon, getFileType, formatFileSize } from '../../utils/fileIcons';
+import { SaveDialog } from './SaveDialog';
+import { Download, Trash2, Pause, Play, X, FolderPlus, GripHorizontal, ChevronUp, ChevronDown, Home, ArrowLeft, RefreshCw, Upload, RotateCcw, Clock } from 'lucide-react';
+import api from '../../services/api';
+
+interface Props {
+  connId: string;
+}
+
+interface FileItem extends FileInfo {
+  path: string;
+  isExpanded?: boolean;
+  children?: FileItem[];
+}
+
+const MIN_TRANSFER_HEIGHT = 100;
+const DEFAULT_TRANSFER_HEIGHT = 180;
+
+export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
+  const connId = rawConnId ? rawConnId.replace(/[^\w-]/g, '') : '';
+  
+  const [path, setPath] = useState('/');
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [showTransfers, setShowTransfers] = useState(true);
+  const [transferHeight, setTransferHeight] = useState(DEFAULT_TRANSFER_HEIGHT);
+  const [saveDialogFile, setSaveDialogFile] = useState<FileItem | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { 
+    transfers, 
+    uploadFile, 
+    downloadFile, 
+    pauseTransfer, 
+    resumeTransfer, 
+    removeTransfer 
+  } = useFileTransferStore();
+  
+  const { askBeforeDownload, downloadPath } = useDownloadSettingsStore();
+
+  // 监听下载事件，自动展开传输面板
+  useEffect(() => {
+    const handleDownloadStarted = () => {
+      setShowTransfers(true);
+    };
+    window.addEventListener('downloadStarted', handleDownloadStarted);
+    return () => window.removeEventListener('downloadStarted', handleDownloadStarted);
+  }, []);
+
+  const fetchFiles = useCallback(async (dirPath: string = path) => {
+    if (!connId) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get(`/api/files/${connId}/list`, { params: { path: dirPath } });
+      
+      let filesData = res.data;
+      if (res.data && res.data.files) {
+        filesData = res.data.files;
+      } else if (Array.isArray(res.data)) {
+        filesData = res.data;
+      } else {
+        filesData = [];
+      }
+      
+      const fileList: FileItem[] = (filesData || []).map((f: FileInfo) => ({
+        ...f,
+        path: `${dirPath === '/' ? '' : dirPath}/${f.name}`.replace(/\/+/g, '/'),
+        isExpanded: false,
+      }));
+      fileList.sort((a, b) => {
+        if (a.is_dir && !b.is_dir) return -1;
+        if (!a.is_dir && b.is_dir) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      setFiles(fileList);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || '获取文件列表失败';
+      setError(`获取文件列表失败: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [connId, path]);
+
+  useEffect(() => {
+    if (connId) {
+      fetchFiles();
+    }
+  }, [connId, fetchFiles]);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = transferHeight;
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dy = startY - ev.clientY;
+      setTransferHeight(Math.max(MIN_TRANSFER_HEIGHT, startHeight + dy));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleNavigate = (dir: string) => {
+    if (dir === '..') {
+      const parts = path.split('/').filter(Boolean);
+      parts.pop();
+      const newPath = parts.length ? '/' + parts.join('/') : '/';
+      setPath(newPath);
+      fetchFiles(newPath);
+    } else {
+      const newPath = path === '/' ? `/${dir}` : `${path}/${dir}`;
+      setPath(newPath);
+      fetchFiles(newPath);
+    }
+    setSelectedFile(null);
+  };
+
+  const handleFileClick = (file: FileItem) => {
+    setSelectedFile(file);
+    if (file.is_dir) {
+      handleNavigate(file.name);
+    }
+  };
+
+  const handleUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setShowTransfers(true);
+    for (const file of files) {
+      try {
+        await uploadFile(connId, path, file);
+      } catch (err: any) {
+        console.error('Upload failed:', err);
+      }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    fetchFiles();
+  };
+
+  const handleDownload = (file: FileItem) => {
+    if (!file.is_dir) {
+      if (askBeforeDownload) {
+        // 显示保存对话框
+        setSaveDialogFile(file);
+      } else {
+        // 直接下载到默认路径
+        downloadFile(connId, file.path, downloadPath);
+      }
+    }
+  };
+
+  const handleSaveDialogSave = (path: string, rememberChoice: boolean) => {
+    if (saveDialogFile) {
+      downloadFile(connId, saveDialogFile.path, path);
+      setSaveDialogFile(null);
+    }
+  };
+
+  const handleSaveDialogCancel = () => {
+    setSaveDialogFile(null);
+  };
+
+  const handleDelete = async (file: FileItem) => {
+    if (!confirm(`确定删除 ${file.name}？`)) return;
+    
+    try {
+      await api.post(`/api/files/${connId}/delete`, { path: file.path });
+      fetchFiles();
+    } catch (err: any) {
+      setError(err.response?.data?.error || '删除失败');
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const name = prompt('请输入文件夹名称');
+    if (!name) return;
+    
+    const folderPath = path === '/' ? `/${name}` : `${path}/${name}`;
+    try {
+      await api.post(`/api/files/${connId}/mkdir`, { path: folderPath });
+      fetchFiles();
+    } catch (err: any) {
+      setError(err.response?.data?.error || '创建文件夹失败');
+    }
+  };
+
+  const allTransfers = transfers.filter(t => t.connId === connId);
+
+  return (
+    <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
+      {/* Save Dialog */}
+      {saveDialogFile && (
+        <SaveDialog
+          fileName={saveDialogFile.name}
+          onSave={handleSaveDialogSave}
+          onCancel={handleSaveDialogCancel}
+        />
+      )}
+
+      {/* Header */}
+      <div className="p-2 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+        <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          文件管理
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleCreateFolder}
+            className="p-1 rounded"
+            style={{ color: 'var(--text-secondary)' }}
+            title="新建文件夹"
+          >
+            <FolderPlus size={14} />
+          </button>
+          <button
+            onClick={handleUpload}
+            className="p-1 rounded"
+            style={{ color: 'var(--accent)' }}
+            title="上传文件"
+          >
+            <Upload size={14} />
+          </button>
+          <button
+            onClick={() => fetchFiles()}
+            className="p-1 rounded"
+            style={{ color: 'var(--text-secondary)' }}
+            title="刷新"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Path Navigation */}
+      <div className="px-2 py-1 flex items-center gap-1 text-xs" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
+        <button
+          onClick={() => handleNavigate('..')}
+          className="p-0.5 rounded hover:bg-opacity-50"
+          style={{ color: 'var(--text-secondary)' }}
+          title="返回上级"
+        >
+          <ArrowLeft size={12} />
+        </button>
+        <button
+          onClick={() => handleNavigate('/')}
+          className="p-0.5 rounded hover:bg-opacity-50"
+          style={{ color: path === '/' ? 'var(--accent)' : 'var(--text-secondary)' }}
+          title="根目录"
+        >
+          <Home size={12} />
+        </button>
+        <span style={{ color: 'var(--text-primary)' }}>{path}</span>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="px-2 py-1 text-xs" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)' }}>
+          {error}
+          <button onClick={() => setError('')} className="ml-2">×</button>
+        </div>
+      )}
+
+      {/* File List */}
+      <div className="flex-1 overflow-auto p-1" style={{ minHeight: 0 }}>
+        {loading ? (
+          <div className="text-center py-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            加载中...
+          </div>
+        ) : files.length === 0 ? (
+          <div className="text-center py-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            空目录
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {files.map((file) => (
+              <FileRow
+                key={file.path}
+                file={file}
+                isSelected={selectedFile?.path === file.path}
+                onClick={() => handleFileClick(file)}
+                onDownload={() => handleDownload(file)}
+                onDelete={() => handleDelete(file)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Transfer Area - Resizable, always visible */}
+      <div style={{ borderTop: '1px solid var(--border)' }}>
+        {/* Drag handle */}
+        <div
+          className="flex items-center justify-center h-2 cursor-ns-resize hover:opacity-80"
+          style={{ color: 'var(--text-secondary)' }}
+          onMouseDown={handleDragStart}
+        >
+          <GripHorizontal size={10} />
+        </div>
+
+        {/* Transfer header */}
+        <div
+          className="px-2 py-1.5 text-xs font-medium flex items-center justify-between cursor-pointer"
+          style={{ color: 'var(--text-secondary)', background: 'var(--bg-primary)', borderTop: '1px solid var(--border)' }}
+          onClick={() => setShowTransfers(!showTransfers)}
+        >
+          <span>文件传输 {allTransfers.length > 0 ? `(${allTransfers.length})` : ''}</span>
+          <span>{showTransfers ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+        </div>
+
+        {/* Transfer list */}
+        {showTransfers && (
+          <div
+            className="overflow-auto"
+            style={{
+              height: `${transferHeight}px`,
+              background: 'var(--bg-primary)',
+            }}
+          >
+            {allTransfers.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-xs" style={{ color: 'var(--text-secondary)' }}>
+                暂无传输任务
+              </div>
+            ) : (
+              allTransfers.map((transfer) => (
+                <TransferItem
+                  key={transfer.id}
+                  transfer={transfer}
+                  onPause={() => pauseTransfer(transfer.id)}
+                  onResume={() => resumeTransfer(transfer.id)}
+                  onCancel={() => removeTransfer(transfer.id)}
+                />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FileRow({ 
+  file, 
+  isSelected, 
+  onClick, 
+  onDownload, 
+  onDelete 
+}: { 
+  file: FileItem; 
+  isSelected: boolean;
+  onClick: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+}) {
+  const [showActions, setShowActions] = useState(false);
+
+  return (
+    <div
+      className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer group"
+      style={{
+        background: isSelected ? 'var(--bg-tertiary)' : 'transparent',
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <div className="flex-shrink-0">
+        {getFileIcon(file.name, file.is_dir, 16)}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-xs truncate" style={{ color: 'var(--text-primary)' }}>
+          {file.name}
+        </div>
+        <div className="text-xs truncate" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>
+          {getFileType(file.name, file.is_dir)}
+          {!file.is_dir && file.size !== undefined && ` · ${formatFileSize(file.size)}`}
+        </div>
+      </div>
+
+      {showActions && (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!file.is_dir && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload();
+              }}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--accent)' }}
+              title="下载"
+            >
+              <Download size={12} />
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="p-0.5 rounded"
+            style={{ color: 'var(--danger)' }}
+            title="删除"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TransferItem({ 
+  transfer, 
+  onPause, 
+  onResume, 
+  onCancel 
+}: { 
+  transfer: TransferTask;
+  onPause: () => void;
+  onResume: () => void;
+  onCancel: () => void;
+}) {
+  const progress = transfer.totalSize > 0 
+    ? Math.round((transfer.transferred / transfer.totalSize) * 100) 
+    : 0;
+
+  const handleRedownload = () => {
+    if (transfer.blobUrl) {
+      const a = document.createElement('a');
+      a.href = transfer.blobUrl;
+      a.download = transfer.fileName;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) a.parentNode.removeChild(a);
+      }, 100);
+    }
+  };
+
+  return (
+    <div className="px-2 py-1.5 text-xs" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {transfer.type === 'upload' ? (
+            <Upload size={12} style={{ color: 'var(--accent)' }} />
+          ) : transfer.status === 'waiting' ? (
+            <Clock size={12} style={{ color: 'var(--warning)' }} />
+          ) : (
+            <Download size={12} style={{ color: 'var(--success)' }} />
+          )}
+          <span className="truncate" style={{ color: 'var(--text-primary)' }}>
+            {transfer.fileName}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {transfer.status === 'transferring' && (
+            <button
+              onClick={onPause}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--text-secondary)' }}
+              title="暂停"
+            >
+              <Pause size={10} />
+            </button>
+          )}
+          {transfer.status === 'paused' && (
+            <button
+              onClick={onResume}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--accent)' }}
+              title="继续"
+            >
+              <Play size={10} />
+            </button>
+          )}
+          {transfer.status === 'completed' && transfer.blobUrl && (
+            <button
+              onClick={handleRedownload}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--accent)' }}
+              title="重新保存"
+            >
+              <RotateCcw size={10} />
+            </button>
+          )}
+          {transfer.status !== 'completed' && (
+            <button
+              onClick={onCancel}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--danger)' }}
+              title="取消"
+            >
+              <X size={10} />
+            </button>
+          )}
+          {transfer.status === 'completed' && (
+            <button
+              onClick={onCancel}
+              className="p-0.5 rounded"
+              style={{ color: 'var(--text-secondary)' }}
+              title="清除"
+            >
+              <X size={10} />
+            </button>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${progress}%`,
+              background: transfer.status === 'error' 
+                ? 'var(--danger)' 
+                : transfer.status === 'completed' 
+                  ? 'var(--success)' 
+                  : 'var(--accent)',
+            }}
+          />
+        </div>
+        <span style={{ color: 'var(--text-secondary)', width: '60px', textAlign: 'right' }}>
+          {transfer.status === 'completed' ? '完成' : 
+           transfer.status === 'error' ? `失败${transfer.error ? `: ${transfer.error}` : ''}` :
+           transfer.status === 'paused' ? '暂停' :
+           transfer.status === 'waiting' ? '等待中' :
+           transfer.status === 'pending' ? '准备中' :
+           formatSpeed(transfer.speed)}
+        </span>
+      </div>
+      
+      <div className="flex justify-between mt-0.5" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>
+        <span>{formatFileSize(transfer.transferred)} / {formatFileSize(transfer.totalSize)}</span>
+        <span>{progress}%</span>
+      </div>
+    </div>
+  );
+}

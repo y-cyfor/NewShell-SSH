@@ -1,0 +1,53 @@
+﻿services:
+  newshell:
+    build: ./server
+    container_name: newshell-server
+    restart: unless-stopped
+    environment:
+      - NEWSHELL_PORT=29800
+      - NEWSHELL_DATA_DIR=/data
+      - NEWSHELL_JWT_SECRET=${NEWSHELL_JWT_SECRET}
+      - NEWSHELL_ENCRYPTION_KEY=${NEWSHELL_ENCRYPTION_KEY}
+    volumes:
+      - newshell-data:/data
+    expose:
+      - "29800"
+    networks:
+      - newshell-net
+
+  nginx:
+    build: ./nginx
+    container_name: newshell-nginx
+    restart: unless-stopped
+    environment:
+      - DOMAIN=${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - newshell
+    networks:
+      - newshell-net
+
+  certbot:
+    image: certbot/certbot
+    container_name: newshell-certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'
+    networks:
+      - newshell-net
+
+volumes:
+  newshell-data:
+  certbot-webroot:
+  certbot-certs:
+
+networks:
+  newshell-net:
+    driver: bridge

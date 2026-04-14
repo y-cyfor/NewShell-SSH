@@ -1,0 +1,391 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --border: #475569;
+  --terminal-bg: #0c0c0c;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --border: #cbd5e1;
+  --terminal-bg: #EAEAEF;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--system-font);
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Resizable panels */
+[data-resize-handle] {
+  background: var(--border);
+  transition: background 0.15s;
+}
+
+[data-resize-handle]:hover {
+  background: var(--accent);
+}
+
+[data-resize-handle-active] {
+  background: var(--accent);
+}
+
+/* Terminal */
+.xterm {
+  padding: 8px;
+}
+
+/* Code blocks in AI chat */
+.ai-code-block {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+  font-size: 13px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.ai-code-block .copy-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ai-code-block:hover .copy-btn {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.typing-indicator span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin: 0 2px;
+  animation: pulse-dot 1.2s infinite;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Frameless window styles */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-tauri-drag-region] button {
+  -webkit-app-region: no-drag;
+}
+
+/* Ensure all buttons in title bar are not draggable */
+.title-bar button {
+  -webkit-app-region: no-drag;
+}
+
+/* Window control buttons styling */
+.window-control-btn {
+  transition: all 0.15s ease;
+}
+
+.window-control-btn:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.window-control-btn.close-btn:hover {
+  background-color: #e81123 !important;
+  color: white !important;
+}
+
+/* Title bar button styling */
+.title-bar-btn {
+  transition: all 0.15s ease;
+}
+
+.title-bar-btn:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.title-bar-btn.active {
+  background-color: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+/* Remove default window frame */
+body {
+  -webkit-app-region: no-drag;
+  border: none;
+  outline: none;
+}
+
+/* Ensure proper window behavior */
+#root {
+  border-radius: 0;
+  box-shadow: none;
+}
+/* Terminal highlight styles */
+.xterm-highlight-ip {
+  color: #3b82f6 !important;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.xterm-highlight-url {
+  color: #10b981 !important;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.xterm-highlight-email {
+  color: #8b5cf6 !important;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Markdown body styles for AI chat */
+.markdown-body {
+  font-size: 13px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.markdown-body h1 {
+  font-size: 1.15rem !important;
+  font-weight: 700;
+  margin: 0.8em 0 0.4em 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-body h2 {
+  font-size: 1.05rem !important;
+  font-weight: 600;
+  margin: 0.7em 0 0.3em 0;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-body h3 {
+  font-size: 1rem !important;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em 0;
+}
+
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  font-size: 0.95rem !important;
+  font-weight: 600;
+  margin: 0.5em 0 0.2em 0;
+}
+
+.markdown-body p {
+  margin: 0.4em 0;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-body li {
+  margin: 0.2em 0;
+}
+
+.markdown-body table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 0.6em 0 !important;
+  font-size: 12px !important;
+  overflow-x: auto !important;
+  display: table !important;
+}
+
+.markdown-body table thead {
+  background: var(--bg-tertiary);
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border: 1px solid var(--border) !important;
+  padding: 6px 10px !important;
+  text-align: left !important;
+}
+
+.markdown-body table th {
+  font-weight: 600 !important;
+  background: var(--bg-tertiary) !important;
+}
+
+.markdown-body table tr:nth-child(even) {
+  background: var(--bg-primary);
+}
+
+.markdown-body table tr:nth-child(odd) {
+  background: var(--bg-secondary);
+}
+
+.markdown-body table thead {
+  background: var(--bg-tertiary);
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.markdown-body table th {
+  font-weight: 600;
+  background: var(--bg-tertiary);
+}
+
+.markdown-body table tr:nth-child(even) {
+  background: var(--bg-primary);
+}
+
+.markdown-body table tr:nth-child(odd) {
+  background: var(--bg-secondary);
+}
+
+.markdown-body table thead {
+  background: var(--bg-tertiary);
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.markdown-body table th {
+  font-weight: 600;
+  background: var(--bg-tertiary);
+}
+
+.markdown-body table tr:nth-child(even) {
+  background: var(--bg-primary);
+}
+
+.markdown-body table tr:nth-child(odd) {
+  background: var(--bg-secondary);
+}
+
+.markdown-body blockquote {
+  margin: 0.4em 0;
+  padding: 0.3em 0.8em;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+.markdown-body code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+.markdown-body pre {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+.markdown-body strong {
+  font-weight: 700;
+}
+
+.markdown-body a {
+  color: var(--accent);
+  text-decoration: underline;
+}

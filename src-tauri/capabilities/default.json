@@ -1,0 +1,13 @@
+{
+  "identifier": "com.newshell.app",
+  "description": "NewShell SSH Manager",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:default",
+    "shell:allow-open"
+  ],
+  "scope": {
+    "allow": ["http://localhost:*", "https://localhost:*"]
+  }
+}
