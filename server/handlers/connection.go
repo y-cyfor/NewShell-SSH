@@ -1,7 +1,14 @@
 package handlers
 
 import (
+	"bufio"
+	"fmt"
 	"net/http"
+	"os"
+	"os/user"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"newshell-server/crypto_util"
 	"newshell-server/models"
@@ -103,4 +110,97 @@ func DeleteConnection(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
+// ImportSSHConfig 解析 ~/.ssh/config 并返回连接列表
+func ImportSSHConfig(c *gin.Context) {
+	// 获取当前用户的 SSH config 路径
+	usr, err := user.Current()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get current user"})
+		return
+	}
+
+	sshDir := filepath.Join(usr.HomeDir, ".ssh")
+	configPath := filepath.Join(sshDir, "config")
+
+	// 如果 ~/.ssh/config 不存在，尝试 /etc/ssh/ssh_config
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		configPath = "/etc/ssh/ssh_config"
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "SSH config file not found"})
+			return
+		}
+	}
+
+	file, err := os.Open(configPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to open SSH config: %v", err)})
+		return
+	}
+	defer file.Close()
+
+	type sshHost struct {
+		Name       string `json:"name"`
+		Host       string `json:"host"`
+		Port       int    `json:"port"`
+		User       string `json:"user"`
+		Identity   string `json:"identity"`
+	}
+
+	var hosts []sshHost
+	var current *sshHost
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) < 2 {
+			continue
+		}
+
+		key := strings.ToLower(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		switch key {
+		case "host":
+			if current != nil && current.Host != "" {
+				hosts = append(hosts, *current)
+			}
+			current = &sshHost{Name: value, Host: value, Port: 22}
+		case "hostname":
+			if current != nil {
+				current.Host = value
+			}
+		case "port":
+			if current != nil {
+				if p, err := strconv.Atoi(value); err == nil {
+					current.Port = p
+				}
+			}
+		case "user":
+			if current != nil {
+				current.User = value
+			}
+		case "identityfile":
+			if current != nil {
+				current.Identity = strings.Trim(value, `"`)
+			}
+		}
+	}
+
+	if current != nil && current.Host != "" {
+		hosts = append(hosts, *current)
+	}
+
+	if len(hosts) == 0 {
+		c.JSON(http.StatusOK, gin.H{"hosts": []sshHost{}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"hosts": hosts})
 }

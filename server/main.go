@@ -83,6 +83,7 @@ func main() {
 		core.POST("/connections", handlers.CreateConnection)
 		core.PUT("/connections/:id", handlers.UpdateConnection)
 		core.DELETE("/connections/:id", handlers.DeleteConnection)
+			core.GET("/connections/import/ssh-config", handlers.ImportSSHConfig)
 
 		core.GET("/files/:id/list", handlers.ListFiles)
 		core.GET("/files/:id/download", handlers.DownloadFile)
