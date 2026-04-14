@@ -1,11 +1,16 @@
+import { useState, useRef, useEffect } from 'react';
 import { useTerminalStore } from '../../stores/terminalStore';
 import { TerminalPanel } from './TerminalPanel';
 import { AgentTerminalPanel } from './AgentTerminalPanel';
 import { ServerListPanel } from '../server/ServerListPanel';
-import { X, Plus, Bot } from 'lucide-react';
+import { SnippetsPanel } from './SnippetsPanel';
+import { X, Plus, Bot, Code } from 'lucide-react';
 
 export function TerminalTabs() {
   const { tabs, activeTabId, setActiveTab, removeTab, addTab } = useTerminalStore();
+  const [showSnippets, setShowSnippets] = useState(false);
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const terminalInputRef = useRef<HTMLInputElement>(null);
 
   const handleNewTab = () => {
     const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -53,6 +58,14 @@ export function TerminalTabs() {
           </div>
         ))}
         <button
+          onClick={() => setShowSnippets(true)}
+          className="px-2 py-1.5 transition-colors hover:opacity-80"
+          style={{ color: 'var(--text-secondary)' }}
+          title="命令片段"
+        >
+          <Code size={14} />
+        </button>
+        <button
           onClick={handleNewTab}
           className="px-2 py-1.5 transition-colors"
           style={{ color: 'var(--text-secondary)' }}
@@ -86,6 +99,16 @@ export function TerminalTabs() {
           </div>
         ))}
       </div>
+      {showSnippets && (
+        <SnippetsPanel
+          onClose={() => setShowSnippets(false)}
+          onInsert={(command) => {
+            // 找到当前活动终端，通过 store 发送命令
+            // 这里需要找到对应的 Terminal ref
+            window.dispatchEvent(new CustomEvent('terminal-insert', { detail: command }));
+          }}
+        />
+      )}
     </div>
   );
 }

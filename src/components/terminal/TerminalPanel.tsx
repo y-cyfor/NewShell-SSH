@@ -77,6 +77,21 @@ export const TerminalPanel = memo(function TerminalPanel({ connId: rawConnId, is
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showSearch]);
 
+  // Listen for snippet insert events
+  useEffect(() => {
+    const handleInsert = (e: Event) => {
+      if (termRef.current && isActive) {
+        const cmd = (e as CustomEvent).detail;
+        if (typeof cmd === 'string' && wsRef.current) {
+          termRef.current.write(cmd);
+          sendInput(wsRef.current, cmd);
+        }
+      }
+    };
+    window.addEventListener('terminal-insert', handleInsert);
+    return () => window.removeEventListener('terminal-insert', handleInsert);
+  }, [isActive]);
+
   // Focus search input when opened
   useEffect(() => {
     if (showSearch && searchInputRef.current) {

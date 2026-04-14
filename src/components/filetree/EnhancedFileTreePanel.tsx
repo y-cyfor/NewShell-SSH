@@ -4,7 +4,7 @@ import { useFileTransferStore, TransferTask, formatSpeed } from '../../stores/fi
 import { useDownloadSettingsStore } from '../../stores/downloadSettingsStore';
 import { getFileIcon, getFileType, formatFileSize } from '../../utils/fileIcons';
 import { SaveDialog } from './SaveDialog';
-import { Download, Trash2, Pause, Play, X, FolderPlus, GripHorizontal, ChevronUp, ChevronDown, Home, ArrowLeft, RefreshCw, Upload, RotateCcw, Clock, Edit2 } from 'lucide-react';
+import { Download, Trash2, Pause, Play, X, FolderPlus, GripHorizontal, ChevronUp, ChevronDown, Home, ArrowLeft, RefreshCw, Upload, RotateCcw, Clock, Edit2, FileText, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 
 interface Props {
@@ -34,6 +34,10 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [viewingFile, setViewingFile] = useState<{ name: string; content: string; path: string } | null>(null);
+  const [editingFile, setEditingFile] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [savingFile, setSavingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { 
@@ -136,6 +140,53 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
     setSelectedFile(file);
     if (file.is_dir) {
       handleNavigate(file.name);
+    }
+  };
+
+  const handleFileDoubleClick = async (file: FileItem) => {
+    if (file.is_dir) return;
+    // 检查是否是文本文件
+    const textExtensions = ['.txt', '.log', '.md', '.json', '.yaml', '.yml', '.xml', '.html', '.css', '.js', '.ts', '.tsx', '.jsx', '.sh', '.bash', '.zsh', '.py', '.go', '.rs', '.c', '.cpp', '.h', '.java', '.conf', '.cfg', '.ini', '.env', '.toml', '.sql', '.gitignore', '.dockerfile', '.makefile', 'makefile', '.properties', '.plist', '.vue', '.svelte'];
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isText = textExtensions.includes(ext) || !ext || file.name.startsWith('.');
+
+    if (!isText) {
+      // 非文本文件直接下载
+      handleDownload(file);
+      return;
+    }
+
+    setViewingFile({ name: file.name, content: '加载中...', path: file.path });
+    try {
+      const res = await api.get(`/api/files/${connId}/download`, {
+        params: { path: file.path },
+        responseType: 'text',
+      });
+      setViewingFile({ name: file.name, content: res.data, path: file.path });
+      setEditedContent(res.data);
+      setEditingFile(false);
+    } catch (err: any) {
+      setViewingFile({ name: file.name, content: `加载失败: ${err.response?.data?.error || err.message}`, path: file.path });
+    }
+  };
+
+  const handleSaveFile = async () => {
+    if (!viewingFile) return;
+    setSavingFile(true);
+    try {
+      const blob = new Blob([editedContent], { type: 'text/plain' });
+      const formData = new FormData();
+      formData.append('file', blob, viewingFile.name);
+      formData.append('path', viewingFile.path);
+      await api.post(`/api/files/${connId}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setViewingFile({ ...viewingFile, content: editedContent });
+      setEditingFile(false);
+    } catch (err: any) {
+      alert('保存失败: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSavingFile(false);
     }
   };
 
@@ -356,6 +407,7 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
                 file={file}
                 isSelected={selectedFile?.path === file.path}
                 onClick={() => handleFileClick(file)}
+                onDoubleClick={() => handleFileDoubleClick(file)}
                 onDownload={() => handleDownload(file)}
                 onDelete={() => handleDelete(file)}
                 onContextMenu={(e) => handleFileContextMenu(e, file)}
@@ -414,6 +466,82 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
         )}
       </div>
 
+      {/* File Viewer Modal */}
+      {viewingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <div
+            className="w-full max-w-3xl rounded-xl shadow-2xl animate-fade-in overflow-hidden"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', maxHeight: '85vh' }}
+          >
+            <div className="flex items-center justify-between p-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-2">
+                <FileText size={14} style={{ color: 'var(--accent)' }} />
+                <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{viewingFile.name}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setEditingFile(true); }}
+                  disabled={editingFile}
+                  className="px-2 py-1 rounded text-xs font-medium transition-all"
+                  style={{
+                    color: editingFile ? 'var(--accent)' : 'var(--text-secondary)',
+                    background: editingFile ? 'var(--accent-subtle)' : 'transparent',
+                  }}
+                >
+                  <Edit2 size={12} />
+                </button>
+                <button onClick={() => setViewingFile(null)} className="p-1 rounded-lg hover:bg-white/5 transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="p-3 overflow-auto" style={{ maxHeight: '70vh' }}>
+              {editingFile ? (
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full rounded-lg p-3 font-mono text-xs outline-none resize-none"
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    minHeight: '50vh',
+                    tabSize: 2,
+                  }}
+                />
+              ) : (
+                <pre
+                  className="font-mono text-xs whitespace-pre-wrap"
+                  style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+                >
+                  {viewingFile.content}
+                </pre>
+              )}
+            </div>
+            {editingFile && (
+              <div className="flex gap-2 p-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <button
+                  onClick={() => { setEditingFile(false); setEditedContent(viewingFile.content); }}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSaveFile}
+                  disabled={savingFile}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5"
+                  style={{ background: 'var(--accent-gradient)', color: '#fff' }}
+                >
+                  {savingFile ? <Loader2 size={14} className="animate-spin" /> : <Edit2 size={14} />}
+                  保存
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* File Context Menu */}
       {contextMenu && (
         <div
@@ -455,6 +583,7 @@ function FileRow({
   file,
   isSelected,
   onClick,
+  onDoubleClick,
   onDownload,
   onDelete,
   onContextMenu
@@ -462,6 +591,7 @@ function FileRow({
   file: FileItem;
   isSelected: boolean;
   onClick: () => void;
+  onDoubleClick: () => void;
   onDownload: () => void;
   onDelete: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -475,6 +605,7 @@ function FileRow({
         background: isSelected ? 'var(--bg-tertiary)' : 'transparent',
       }}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
