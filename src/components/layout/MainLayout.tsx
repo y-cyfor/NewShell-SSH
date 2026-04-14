@@ -27,7 +27,6 @@ export function MainLayout() {
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
-  // Use ref to track latest sidebarWidth for save, avoiding stale closure in handleMouseUp
   const sidebarWidthRef = useRef(sidebarWidth);
   useEffect(() => {
     sidebarWidthRef.current = sidebarWidth;
@@ -83,7 +82,6 @@ export function MainLayout() {
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
-    // Use ref to get latest width, avoiding stale closure
     const width = sidebarWidthRef.current;
     if (width) {
       localStorage.setItem('newshell_sidebar_width', String(width));
@@ -124,16 +122,16 @@ export function MainLayout() {
 
         {/* Sidebar with resize handle */}
         <div className="flex flex-none relative" style={{ width: sidebarCollapsed ? 0 : sidebarWidth, transition: isResizing ? 'none' : 'width 0.2s', overflow: 'hidden' }}>
-          <div ref={sidebarRef} className="h-full overflow-hidden" style={{ width: sidebarWidth }}>
+          <div ref={sidebarRef} className="h-full overflow-hidden" style={{ width: sidebarWidth, borderRight: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
             <SidebarPanel />
           </div>
 
           {/* Resize handle */}
           {!sidebarCollapsed && (
             <div
-              className="absolute top-0 right-0 w-1 h-full cursor-col-resize z-10 hover:bg-blue-500/30 transition-colors"
+              className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 transition-colors"
               onMouseDown={handleMouseDown}
-              style={{ background: isResizing ? 'var(--accent)' : 'transparent' }}
+              style={{ background: isResizing ? 'var(--accent-gradient)' : 'transparent' }}
             />
           )}
         </div>
@@ -165,7 +163,10 @@ export function MainLayout() {
             <PanelResizeHandle />
 
             <Panel defaultSize={25} minSize={15} maxSize={40}>
-              <div className="h-full overflow-auto" style={{ background: "var(--bg-secondary)" }}>
+              <div className="h-full overflow-auto" style={{
+                background: 'var(--bg-secondary)',
+                borderLeft: '1px solid var(--border)',
+              }}>
                 <ExtendedSysInfoPanel connId={activeTab?.connId || ""} />
               </div>
             </Panel>

@@ -14,35 +14,40 @@ export function ActivityBar({ sidebarCollapsed, onToggleSidebar }: ActivityBarPr
       className="flex flex-col items-center py-2 gap-1"
       style={{
         width: '40px',
-        background: 'var(--bg-primary)',
+        background: 'var(--bg-secondary)',
         borderRight: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)',
+        zIndex: 10,
       }}
     >
       {/* 收起/展开侧边栏按钮 */}
       <button
         onClick={onToggleSidebar}
         title={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
-        className="flex items-center justify-center w-10 h-10 transition-colors"
+        className="flex items-center justify-center w-10 h-10 transition-all duration-200"
         style={{ color: 'var(--text-secondary)' }}
       >
-        <div className="w-8 h-8 flex items-center justify-center rounded transition-colors hover:bg-opacity-50">
-          {sidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+        <div className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200"
+          style={{
+            background: 'var(--surface-hover)',
+          }}>
+          {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </div>
       </button>
-      
+
       {/* 分隔线 */}
-      <div className="w-6 h-px my-1" style={{ background: 'var(--border)' }} />
-      
+      <div className="w-5 h-px my-1" style={{ background: 'var(--border)' }} />
+
       {/* 服务器列表按钮 */}
       <ActivityBarButton
-        icon={<Server size={20} />}
+        icon={<Server size={18} />}
         title="服务器列表"
         isActive={activeIcon === 'servers'}
         onClick={() => toggleIcon('servers')}
       />
       {/* AI助手按钮 */}
       <ActivityBarButton
-        icon={<MessageSquare size={20} />}
+        icon={<MessageSquare size={18} />}
         title="AI助手"
         isActive={activeIcon === 'ai'}
         onClick={() => toggleIcon('ai')}
@@ -66,22 +71,22 @@ function ActivityBarButton({
     <button
       onClick={onClick}
       title={title}
-      className="relative flex items-center justify-center w-10 h-10 transition-colors"
+      className="relative flex items-center justify-center w-10 h-10 transition-all duration-200"
       style={{
-        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
       }}
     >
-      {/* 左侧激活指示器 */}
+      {/* 左侧激活指示器 - gradient */}
       {isActive && (
         <div
-          className="absolute left-0 w-0.5 h-6 rounded-r"
-          style={{ background: 'var(--accent)' }}
+          className="absolute left-0 w-0.5 h-5 rounded-r"
+          style={{ background: 'var(--accent-gradient)' }}
         />
       )}
       <div
-        className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200"
         style={{
-          background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+          background: isActive ? 'var(--accent-subtle)' : 'transparent',
         }}
       >
         {icon}

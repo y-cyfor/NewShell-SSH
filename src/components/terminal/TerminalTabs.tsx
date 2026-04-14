@@ -19,20 +19,24 @@ export function TerminalTabs() {
       {/* Tab Bar */}
       <div
         className="flex items-center gap-0 overflow-x-auto"
-        style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
       >
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer text-xs whitespace-nowrap group"
+            className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer text-xs whitespace-nowrap group relative"
             style={{
               background: tab.id === activeTabId ? 'var(--terminal-bg)' : 'transparent',
-              borderBottom: tab.id === activeTabId ? '2px solid var(--accent)' : '2px solid transparent',
               color: tab.id === activeTabId ? 'var(--text-primary)' : 'var(--text-secondary)',
+              transition: 'background 0.15s, color 0.15s',
             }}
             onClick={() => setActiveTab(tab.id)}
           >
-            {tab.type === 'agent-exec' && <Bot size={11} style={{ color: 'var(--accent)' }} />}
+            {/* Active gradient indicator */}
+            {tab.id === activeTabId && (
+              <div className="absolute top-0 left-0 right-0 h-0.5 rounded-full" style={{ background: 'var(--accent-gradient)' }} />
+            )}
+            {tab.type === 'agent-exec' && <Bot size={11} style={{ color: tab.id === activeTabId ? 'var(--accent)' : 'var(--text-secondary)' }} />}
             <span className="max-w-[120px] truncate">{tab.name}</span>
             {tab.type !== 'server-list' && (
               <button
@@ -40,7 +44,7 @@ export function TerminalTabs() {
                   e.stopPropagation();
                   removeTab(tab.id);
                 }}
-                className="p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="p-0.5 rounded opacity-0 group-hover:opacity-100 transition-all"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <X size={12} />
@@ -50,7 +54,7 @@ export function TerminalTabs() {
         ))}
         <button
           onClick={handleNewTab}
-          className="px-2 py-1.5"
+          className="px-2 py-1.5 transition-colors"
           style={{ color: 'var(--text-secondary)' }}
           title="新建标签 (Ctrl+T)"
         >

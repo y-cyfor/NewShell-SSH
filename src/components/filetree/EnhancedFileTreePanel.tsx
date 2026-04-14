@@ -221,13 +221,13 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
 
       {/* Header */}
       <div className="p-2 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-        <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-xs font-semibold bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           文件管理
         </span>
         <div className="flex items-center gap-1">
           <button
             onClick={handleCreateFolder}
-            className="p-1 rounded"
+            className="p-1 rounded-lg hover:bg-white/5 transition-all"
             style={{ color: 'var(--text-secondary)' }}
             title="新建文件夹"
           >
@@ -235,7 +235,7 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
           </button>
           <button
             onClick={handleUpload}
-            className="p-1 rounded"
+            className="p-1 rounded-lg hover:bg-white/5 transition-all"
             style={{ color: 'var(--accent)' }}
             title="上传文件"
           >
@@ -243,7 +243,7 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
           </button>
           <button
             onClick={() => fetchFiles()}
-            className="p-1 rounded"
+            className="p-1 rounded-lg hover:bg-white/5 transition-all"
             style={{ color: 'var(--text-secondary)' }}
             title="刷新"
           >

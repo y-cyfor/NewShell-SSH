@@ -10,7 +10,7 @@ import { getBaseUrl } from "../../services/api";
 import { agentChat, agentConfirm, agentCancel, getAgentMessages } from "../../services/agentService";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AgentSessionList } from "./AgentSessionList";
-import { Send, RotateCcw, Bot, MessageSquare, History, X, Loader, CheckCircle, XCircle, Circle, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { Send, RotateCcw, Bot, MessageSquare, History, X, Loader, CheckCircle, XCircle, Circle, ChevronDown, ChevronRight, Clock, Sparkles } from "lucide-react";
 
 const PRESET_QUESTIONS = [
   "如何查看端口占用?", "如何查看进程列表?", "如何查看磁盘空间?",
@@ -393,14 +393,16 @@ export function AiChatPanel() {
     <div className="h-full flex flex-col" style={{ background: "var(--bg-secondary)" }}>
       {/* Header */}
       <div className="flex items-center justify-between p-2 px-3" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="flex items-center gap-1.5">
-          <Bot size={14} style={{ color: "var(--accent)" }} />
-          <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>AI</span>
-          {currentLoading && <span className="text-xs animate-pulse" style={{ color: "var(--accent)" }}>执行中...</span>}
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-gradient)' }}>
+            <Bot size={12} style={{ color: "#fff" }} />
+          </div>
+          <span className="text-xs font-semibold bg-clip-text" style={{ background: "var(--accent-gradient)", WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI 助手</span>
+          {currentLoading && <span className="text-xs animate-pulse px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-subtle)', color: "var(--accent)" }}>执行中...</span>}
         </div>
         <div className="flex items-center gap-1">
-          {isAgentMode && <button onClick={() => setShowHistory(!showHistory)} title="历史" style={{ color: "var(--text-secondary)" }}><History size={14} /></button>}
-          <button onClick={clearAll} title="清空" style={{ color: "var(--text-secondary)" }}><RotateCcw size={14} /></button>
+          {isAgentMode && <button onClick={() => setShowHistory(!showHistory)} title="历史" className="p-1 rounded-lg hover:bg-white/5 transition-all" style={{ color: "var(--text-secondary)" }}><History size={14} /></button>}
+          <button onClick={clearAll} title="清空" className="p-1 rounded-lg hover:bg-white/5 transition-all" style={{ color: "var(--text-secondary)" }}><RotateCcw size={14} /></button>
         </div>
       </div>
 
@@ -416,10 +418,13 @@ export function AiChatPanel() {
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {/* Chat mode empty */}
         {!isAgentMode && chatMessages.length === 0 && (
-          <div className="text-center py-4">
+          <div className="text-center py-6">
+            <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
+              <Sparkles size={22} style={{ color: 'var(--accent)' }} />
+            </div>
             <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>AI 运维助手</p>
             <div className="flex flex-wrap gap-1.5 justify-center">
-              {PRESET_QUESTIONS.map((q) => <button key={q} onClick={() => sendChatMessage(q)} className="text-xs px-2 py-1 rounded" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>{q}</button>)}
+              {PRESET_QUESTIONS.map((q) => <button key={q} onClick={() => sendChatMessage(q)} className="text-xs px-3 py-1.5 rounded-lg transition-all hover:scale-105" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: '1px solid var(--border)' }}>{q}</button>)}
             </div>
           </div>
         )}
@@ -429,7 +434,7 @@ export function AiChatPanel() {
           <div key={idx} className="animate-fade-in">
             {msg.role === "user" ? (
               <div className="flex justify-end mb-2">
-                <div className="max-w-[85%] px-3 py-2 rounded-lg text-xs" style={{ background: "var(--accent)", color: "#fff" }}>{msg.content}</div>
+                <div className="max-w-[85%] px-3.5 py-2.5 rounded-xl text-xs" style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: 'var(--shadow-sm)' }}>{msg.content}</div>
               </div>
             ) : (
               <div className="text-xs mb-2" style={{ color: "var(--text-primary)" }}>
@@ -452,7 +457,7 @@ export function AiChatPanel() {
           <div key={msg.id} className="animate-fade-in">
             {msg.type === 'user' && (
               <div className="flex justify-end mb-3">
-                <div className="max-w-[85%] px-3 py-2 rounded-lg text-xs" style={{ background: "var(--accent)", color: "#fff" }}>{msg.content}</div>
+                <div className="max-w-[85%] px-3.5 py-2.5 rounded-xl text-xs" style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: 'var(--shadow-sm)' }}>{msg.content}</div>
               </div>
             )}
             {msg.type === 'ai_thinking' && (
@@ -493,32 +498,32 @@ export function AiChatPanel() {
       )}
 
       {/* Input */}
-      <div className="p-2 border-t" style={{ borderColor: 'var(--border)' }}>
+      <div className="p-2.5 border-t" style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)' }}>
         <div className="flex gap-2">
           <input type="text" value={isAgentMode ? agentInput : chatInput}
             onChange={(e) => isAgentMode ? setAgentInput(e.target.value) : setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (isAgentMode ? sendAgentMessage() : sendChatMessage())}
             placeholder={isAgentMode ? "输入服务器管理需求..." : "输入运维问题..."}
-            className="flex-1 px-3 py-2 rounded text-xs outline-none"
-            style={{ background: "var(--bg-primary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            className="flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none focus:ring-1 transition-all"
+            style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
             disabled={currentLoading} />
           <button onClick={() => isAgentMode ? (currentLoading ? handleCancel() : sendAgentMessage()) : sendChatMessage()}
-            className="px-3 py-2 rounded"
-            style={{ background: isAgentMode && currentLoading ? '#ef4444' : "var(--accent)", color: "#fff" }}>
+            className="px-3.5 py-2.5 rounded-xl font-medium transition-all flex items-center justify-center"
+            style={{ background: isAgentMode && currentLoading ? 'var(--danger-gradient)' : "var(--accent-gradient)", color: "#fff", boxShadow: 'var(--shadow-sm)' }}>
             {isAgentMode && currentLoading ? <X size={14} /> : <Send size={14} />}
           </button>
         </div>
       </div>
 
       {/* Bottom controls: Mode + Model selector */}
-      <div className="flex items-center gap-2 px-2 pb-1.5" style={{ borderTop: '1px solid var(--border)', paddingTop: '4px' }}>
-        <div className="flex rounded overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-          <button onClick={() => agentStore.setMode('chat')} className="flex items-center gap-1 px-2 py-1 text-[10px]"
-            style={{ background: !isAgentMode ? 'var(--accent)' : 'transparent', color: !isAgentMode ? '#fff' : 'var(--text-secondary)' }}>
+      <div className="flex items-center gap-2 px-2.5 pb-2" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-primary)', paddingTop: '6px' }}>
+        <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+          <button onClick={() => agentStore.setMode('chat')} className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium transition-all"
+            style={{ background: !isAgentMode ? 'var(--accent-subtle)' : 'transparent', color: !isAgentMode ? 'var(--accent)' : 'var(--text-secondary)' }}>
             <MessageSquare size={10} /> 对话
           </button>
-          <button onClick={() => agentStore.setMode('agent')} className="flex items-center gap-1 px-2 py-1 text-[10px]"
-            style={{ background: isAgentMode ? 'var(--accent)' : 'transparent', color: isAgentMode ? '#fff' : 'var(--text-secondary)' }}>
+          <button onClick={() => agentStore.setMode('agent')} className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-medium transition-all"
+            style={{ background: isAgentMode ? 'var(--accent-subtle)' : 'transparent', color: isAgentMode ? 'var(--accent)' : 'var(--text-secondary)' }}>
             <Bot size={10} /> Agent
           </button>
         </div>
@@ -569,8 +574,8 @@ function ToolCallCardInline({ toolCall }: { toolCall: ToolCallStep }) {
   const commandDisplay = toolCall.parameters?.command || toolCall.parameters?.path || toolCall.toolName;
 
   return (
-    <div className="mb-2 rounded text-xs" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
-      <div className="flex items-center gap-2 p-2 cursor-pointer" onClick={() => hasOutput && setExpanded(!expanded)}>
+    <div className="mb-2 rounded-lg text-xs overflow-hidden" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-2 p-2.5 cursor-pointer hover:bg-white/5 transition-all" onClick={() => hasOutput && setExpanded(!expanded)}>
         <span style={{ color: statusColor }}>{statusIcon}</span>
         <span className="font-mono flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{commandDisplay}</span>
         <span className="text-[10px]" style={{ color: statusColor }}>

@@ -62,12 +62,12 @@ export function ConnectionList() {
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
       <div className="p-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-        <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-xs font-semibold bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           连接 ({connections.length})
         </span>
         <button
           onClick={() => setShowAdd(true)}
-          className="p-1 rounded hover:opacity-80"
+          className="p-1.5 rounded-lg hover:opacity-80 transition-all"
           style={{ color: 'var(--accent)' }}
           title="添加连接"
         >
@@ -76,7 +76,7 @@ export function ConnectionList() {
       </div>
 
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
           <Search size={14} style={{ color: 'var(--text-secondary)' }} />
           <input
             type="text"
@@ -94,27 +94,30 @@ export function ConnectionList() {
           <div key={group} className="mb-1">
             <button
               onClick={() => toggleGroup(group)}
-              className="flex items-center gap-1 w-full px-2 py-1.5 text-xs font-medium rounded"
+              className="flex items-center gap-1.5 w-full px-2.5 py-2 text-xs font-medium rounded-lg mb-0.5 transition-all"
               style={{ color: 'var(--text-secondary)' }}
             >
               {collapsedGroups.has(group) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-              <FolderOpen size={12} />
+              <FolderOpen size={12} style={{ color: 'var(--accent)' }} />
               <span className="flex-1 text-left truncate">{group}</span>
-              <span className="opacity-50">{conns.length}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>{conns.length}</span>
             </button>
             {!collapsedGroups.has(group) && (
-              <div className="ml-2">
+              <div className="ml-1">
                 {conns.map((conn) => (
                   <div
                     key={conn.id}
-                    className="flex items-center gap-2 px-2 py-2 rounded cursor-pointer group mb-0.5"
-                    style={{ transition: 'background 0.1s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer group mb-1 transition-all"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid transparent',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-hover)'; e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
                     onClick={() => addTab(conn.id, conn.name)}
                   >
                     <div
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform group-hover:scale-110"
                       style={{ background: conn.color || 'var(--accent)' }}
                     />
                     <div className="flex-1 min-w-0">
@@ -124,22 +127,22 @@ export function ConnectionList() {
                           {conn.synced ? (
                             <Cloud size={10} style={{ color: 'var(--accent)' }} />
                           ) : (
-                            <HardDrive size={10} style={{ color: 'var(--text-secondary)' }} />
+                            <HardDrive size={10} style={{ color: 'var(--text-muted)' }} />
                           )}
                         </span>
                       </div>
-                      <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                      <div className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                         {conn.username}@{conn.host}:{conn.port}
                       </div>
                     </div>
 
-                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditConn(conn);
                         }}
-                        className="p-1 rounded"
+                        className="p-1 rounded-md transition-colors"
                         style={{ color: 'var(--text-secondary)' }}
                         title="编辑"
                       >
@@ -152,7 +155,7 @@ export function ConnectionList() {
                             deleteConnection(conn.id);
                           }
                         }}
-                        className="p-1 rounded"
+                        className="p-1 rounded-md transition-colors"
                         style={{ color: 'var(--danger)' }}
                         title="删除"
                       >
@@ -166,14 +169,16 @@ export function ConnectionList() {
           </div>
         ))}
         {filteredConnections.length === 0 && (
-          <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
-            <Server size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-xs">{search ? '未找到匹配的连接' : '暂无连接'}</p>
+          <div className="text-center py-10" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'var(--accent-subtle)' }}>
+              <Server size={24} style={{ color: 'var(--accent)' }} />
+            </div>
+            <p className="text-xs mb-1">{search ? '未找到匹配的连接' : '暂无连接'}</p>
             {!search && (
               <button
                 onClick={() => setShowAdd(true)}
-                className="text-xs mt-2 px-3 py-1 rounded"
-                style={{ background: 'var(--accent)', color: '#fff' }}
+                className="text-xs mt-2 px-4 py-1.5 rounded-lg font-medium transition-all"
+                style={{ background: 'var(--accent-gradient)', color: '#fff' }}
               >
                 添加连接
               </button>

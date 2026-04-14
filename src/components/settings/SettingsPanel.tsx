@@ -37,35 +37,38 @@ export function SettingsPanel({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('general');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-      <div className="flex rounded-lg shadow-xl animate-fade-in overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+      <div className="flex rounded-xl shadow-2xl animate-fade-in-up overflow-hidden"
         style={{ width: '700px', height: '520px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* Left Sidebar */}
         <div className="flex flex-col py-4 w-44 flex-shrink-0" style={{ background: 'var(--bg-primary)', borderRight: '1px solid var(--border)' }}>
-          <div className="px-4 pb-4 flex items-center gap-2">
-            <Settings size={16} style={{ color: 'var(--accent)' }} />
-            <span className="font-semibold text-sm">设置</span>
+          <div className="px-4 pb-4 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-gradient)' }}>
+              <Settings size={14} style={{ color: '#fff' }} />
+            </div>
+            <span className="font-semibold text-sm bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>设置</span>
           </div>
           <div className="flex-1 flex flex-col gap-0.5 px-2">
             {TAB_ITEMS.map((tab, idx) => {
               if (tab.isHeader) {
                 return (
-                  <div key={`h-${idx}`} className="flex items-center gap-2 px-3 py-2 mt-2 mb-0.5 text-xs font-medium"
-                    style={{ color: 'var(--text-secondary)', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+                  <div key={`h-${idx}`} className="flex items-center gap-2 px-3 py-2 mt-3 mb-0.5 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: 'var(--text-muted)' }}>
                     {tab.icon} {tab.label}
                   </div>
                 );
               }
               return (
                 <button key={`${tab.id}-${idx}`} onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-2.5 px-3 py-1.5 rounded text-xs transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs transition-all"
                   style={{
-                    background: activeTab === tab.id ? 'var(--accent)' : 'transparent',
-                    color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)',
+                    background: activeTab === tab.id ? 'var(--accent-subtle)' : 'transparent',
+                    color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
                     paddingLeft: tab.indent ? '28px' : '12px',
                     fontSize: tab.indent ? '11px' : '13px',
+                    fontWeight: activeTab === tab.id ? '600' : '400',
                   }}>
                   {tab.icon} <span>{tab.label}</span>
                 </button>
@@ -83,9 +86,10 @@ export function SettingsPanel({ onClose }: Props) {
             {activeTab === 'agent' && <AgentSettingsTab />}
             {activeTab === 'sync' && <SyncTab />}
           </div>
-          <div className="flex items-center justify-end gap-1.5 px-4 py-2" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-            <button onClick={onClose} className="px-3 py-1 rounded text-xs flex items-center gap-1" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-              <X size={12} /> 关闭
+          <div className="flex items-center justify-end gap-1.5 px-4 py-2.5" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+            <button onClick={onClose} className="px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-medium transition-all"
+              style={{ background: 'var(--accent-gradient)', color: '#fff' }}>
+              <Check size={12} /> 完成
             </button>
           </div>
         </div>
@@ -102,12 +106,12 @@ function GeneralTab() {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>主题外观</h3>
+      <h3 className="text-sm font-semibold bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>主题外观</h3>
 
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>主题</label>
         <select value={themeStore.theme} onChange={(e) => themeStore.setTheme(e.target.value as any)}
-          className="w-full px-3 py-1.5 rounded text-xs outline-none" style={selectStyle}>
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={selectStyle}>
           <option value="dark">暗色</option>
           <option value="light">亮色</option>
         </select>
@@ -116,7 +120,7 @@ function GeneralTab() {
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>系统字体</label>
         <select value={fontStore.uiFont} onChange={(e) => fontStore.setUIFont(e.target.value)}
-          className="w-full px-3 py-1.5 rounded text-xs outline-none" style={selectStyle}>
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={selectStyle}>
           <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">系统默认</option>
           {BUILTIN_FONTS.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
         </select>
@@ -125,7 +129,7 @@ function GeneralTab() {
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>命令行字体</label>
         <select value={fontStore.terminalFont} onChange={(e) => fontStore.setTerminalFont(e.target.value)}
-          className="w-full px-3 py-1.5 rounded text-xs outline-none" style={selectStyle}>
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={selectStyle}>
           {BUILTIN_MONO_FONTS.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
         </select>
       </div>
@@ -133,7 +137,7 @@ function GeneralTab() {
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>字号</label>
         <select value={fontStore.fontSize} onChange={(e) => fontStore.setFontSize(parseInt(e.target.value))}
-          className="w-full px-3 py-1.5 rounded text-xs outline-none" style={selectStyle}>
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={selectStyle}>
           {Array.from({ length: 21 }, (_, i) => i + 10).map(s => <option key={s} value={s}>{s}px</option>)}
         </select>
       </div>
@@ -148,12 +152,12 @@ function FileTab() {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>文件管理</h3>
+      <h3 className="text-sm font-semibold bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>文件管理</h3>
 
       <div>
         <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>默认下载路径</label>
         <input type="text" value={ds.downloadPath} onChange={(e) => ds.setDownloadPath(e.target.value)}
-          placeholder="留空则保存到默认位置" className="w-full px-3 py-1.5 rounded text-xs outline-none" style={inputStyle} />
+          placeholder="留空则保存到默认位置" className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={inputStyle} />
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
@@ -165,13 +169,13 @@ function FileTab() {
       <div>
         <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>下载限速 (KB/s)</label>
         <input type="number" value={ds.downloadSpeedLimit || ''} onChange={(e) => ds.setDownloadSpeedLimit(parseInt(e.target.value) || 0)}
-          placeholder="留空不限制" className="w-full px-3 py-1.5 rounded text-xs outline-none" style={inputStyle} />
+          placeholder="留空不限制" className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={inputStyle} />
       </div>
 
       <div>
         <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>同时下载数</label>
         <input type="number" value={ds.concurrentDownloads || ''} onChange={(e) => ds.setConcurrentDownloads(parseInt(e.target.value) || 0)}
-          placeholder="留空不限制" className="w-full px-3 py-1.5 rounded text-xs outline-none" style={inputStyle} />
+          placeholder="留空不限制" className="w-full px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 transition-all" style={inputStyle} />
       </div>
     </div>
   );
@@ -195,16 +199,16 @@ function ModelSettingsTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-        <Cpu size={14} /> 模型配置
+        <Cpu size={14} style={{ color: 'var(--accent)' }} /> 模型配置
       </h3>
 
       <div className="space-y-1.5">
         {aiStore.models.map((model) => {
           const provider = PROVIDER_PRESETS.find(p => p.id === model.provider) || PROVIDER_PRESETS[0];
           return (
-            <div key={model.id} className="flex items-center gap-2 p-2 rounded cursor-pointer"
+            <div key={model.id} className="flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all"
               style={{
-                background: editingId === model.id ? 'var(--accent)' : 'var(--bg-tertiary)',
+                background: editingId === model.id ? 'var(--accent-subtle)' : 'var(--bg-tertiary)',
                 border: '1px solid', borderColor: model.isDefault ? 'var(--accent)' : 'var(--border)',
               }}
               onClick={() => setEditingId(editingId === model.id ? null : model.id)}>
@@ -234,24 +238,24 @@ function ModelSettingsTab() {
       </div>
 
       {showAdd ? (
-        <div className="p-3 rounded space-y-2" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+        <div className="p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
           <label className="text-xs font-medium block" style={{ color: 'var(--text-secondary)' }}>选择服务商</label>
           <select value={addProvider} onChange={(e) => setAddProvider(e.target.value)}
-            className="w-full px-2 py-1 rounded text-xs outline-none"
+            className="w-full px-2 py-2 rounded-lg text-xs outline-none"
             style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
             {PROVIDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.icon} {p.name}</option>)}
           </select>
           <div className="flex gap-2">
-            <button onClick={() => setShowAdd(false)} className="flex-1 px-2 py-1 rounded text-xs"
+            <button onClick={() => setShowAdd(false)} className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all"
               style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>取消</button>
-            <button onClick={handleAdd} className="flex-1 px-2 py-1 rounded text-xs text-white"
-              style={{ background: 'var(--accent)' }}>添加</button>
+            <button onClick={handleAdd} className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all text-white"
+              style={{ background: 'var(--accent-gradient)' }}>添加</button>
           </div>
         </div>
       ) : (
         <button onClick={() => setShowAdd(true)}
-          className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded text-xs"
-          style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all"
+          style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)' }}>
           <Plus size={12} /> 添加模型
         </button>
       )}
@@ -261,7 +265,7 @@ function ModelSettingsTab() {
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>System Prompt</label>
         <textarea value={aiStore.systemPrompt} onChange={(e) => aiStore.updateSystemPrompt(e.target.value)} rows={4}
-          className="w-full px-3 py-2 rounded text-xs outline-none resize-none"
+          className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none focus:ring-1 transition-all"
           style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
       </div>
     </div>
@@ -273,8 +277,8 @@ function ModelEditor({ model, onUpdate }: { model: ModelConfig; onUpdate: (parti
   const inputStyle = { background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
 
   return (
-    <div className="p-3 rounded space-y-3" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
-      <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>模型详情</div>
+    <div className="p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+      <div className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>模型详情</div>
 
       <div>
         <label className="text-[10px] mb-1 block" style={{ color: 'var(--text-secondary)' }}>服务商</label>
@@ -379,18 +383,18 @@ function AgentSettingsTab() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-        <Bot size={14} /> Agent 设置
+        <Bot size={14} style={{ color: 'var(--accent)' }} /> Agent 设置
       </h3>
 
-      <div className="flex gap-1 mb-4">
+      <div className="flex gap-1.5 mb-4">
         {([
           { id: 'general', label: '执行设置', icon: <Settings size={11} /> },
           { id: 'mcp', label: 'MCP 服务器', icon: <Plug size={11} /> },
           { id: 'skills', label: 'Skills', icon: <Package size={11} /> },
         ] as const).map(tab => (
           <button key={tab.id} onClick={() => setActiveSection(tab.id)}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px]"
-            style={{ background: activeSection === tab.id ? 'var(--accent)' : 'var(--bg-tertiary)', color: activeSection === tab.id ? '#fff' : 'var(--text-secondary)' }}>
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+            style={{ background: activeSection === tab.id ? 'var(--accent-subtle)' : 'var(--bg-tertiary)', color: activeSection === tab.id ? 'var(--accent)' : 'var(--text-secondary)' }}>
             {tab.icon} {tab.label}
           </button>
         ))}
@@ -433,8 +437,8 @@ function AgentSettingsTab() {
             <span className="text-xs" style={{ color: 'var(--text-primary)' }}>智能超时</span>
           </label>
 
-          <button onClick={handleSave} className="w-full px-4 py-2 rounded text-xs font-medium flex items-center justify-center gap-2"
-            style={{ background: saved ? 'var(--success)' : 'var(--accent)', color: '#fff' }}>
+          <button onClick={handleSave} className="w-full px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+            style={{ background: saved ? 'var(--success-gradient)' : 'var(--accent-gradient)', color: '#fff', boxShadow: 'var(--shadow-md)' }}>
             <Check size={14} /> {saved ? '已保存' : '保存'}
           </button>
         </div>
@@ -512,8 +516,8 @@ function SyncTab() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-        <CloudUpload size={14} className="inline mr-1.5" style={{ verticalAlign: 'middle' }} />
+      <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+        <CloudUpload size={14} style={{ color: 'var(--accent)' }} />
         同步管理
       </h3>
 
@@ -549,8 +553,8 @@ function SyncTab() {
           </div>
           {error && <div className="text-xs" style={{ color: '#ef4444' }}>{error}</div>}
           <button onClick={handleLogin} disabled={syncStore.loading || !username || !password}
-            className="w-full px-3 py-1.5 rounded text-xs flex items-center justify-center gap-1"
-            style={{ background: 'var(--accent)', color: '#fff', opacity: syncStore.loading || !username || !password ? 0.5 : 1 }}>
+            className="w-full px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+            style={{ background: 'var(--accent-gradient)', color: '#fff', opacity: syncStore.loading || !username || !password ? 0.5 : 1, boxShadow: 'var(--shadow-md)' }}>
             <LogIn size={12} /> {syncStore.loading ? '登录中...' : '登录'}
           </button>
         </div>

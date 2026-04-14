@@ -140,7 +140,7 @@ export function ExtendedSysInfoPanel({ connId }: Props) {
     <div className="h-full overflow-auto p-3" style={{ background: 'var(--bg-secondary)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-xs font-semibold bg-clip-text" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           服务器信息
         </span>
         <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export function ExtendedSysInfoPanel({ connId }: Props) {
 // Status Panel Component
 function StatusPanel({ info }: { info: ExtendedSysInfo }) {
   return (
-    <div className="p-3 rounded" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+    <div className="p-3 rounded-lg" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
       <div className="text-xs space-y-2">
         {/* Load Average */}
         {info.load_average && (
@@ -529,10 +529,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+    <div className="rounded-lg" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-2 text-xs font-medium"
+        className="w-full flex items-center justify-between p-2.5 text-xs font-medium rounded-t-lg"
         style={{ color: 'var(--text-secondary)' }}
       >
         <div className="flex items-center gap-1.5">
@@ -566,10 +566,10 @@ function ProgressBar({ icon, label, value, color }: { icon: React.ReactNode | nu
           {clampedValue.toFixed(1)}%
         </span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${clampedValue}%`, background: color }}
+          style={{ width: `${clampedValue}%`, background: `linear-gradient(90deg, ${color}, ${color}dd)` }}
         />
       </div>
     </div>
