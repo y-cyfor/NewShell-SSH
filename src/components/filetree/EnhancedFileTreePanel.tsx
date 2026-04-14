@@ -4,7 +4,7 @@ import { useFileTransferStore, TransferTask, formatSpeed } from '../../stores/fi
 import { useDownloadSettingsStore } from '../../stores/downloadSettingsStore';
 import { getFileIcon, getFileType, formatFileSize } from '../../utils/fileIcons';
 import { SaveDialog } from './SaveDialog';
-import { Download, Trash2, Pause, Play, X, FolderPlus, GripHorizontal, ChevronUp, ChevronDown, Home, ArrowLeft, RefreshCw, Upload, RotateCcw, Clock } from 'lucide-react';
+import { Download, Trash2, Pause, Play, X, FolderPlus, GripHorizontal, ChevronUp, ChevronDown, Home, ArrowLeft, RefreshCw, Upload, RotateCcw, Clock, Edit2 } from 'lucide-react';
 import api from '../../services/api';
 
 interface Props {
@@ -31,6 +31,9 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
   const [showTransfers, setShowTransfers] = useState(true);
   const [transferHeight, setTransferHeight] = useState(DEFAULT_TRANSFER_HEIGHT);
   const [saveDialogFile, setSaveDialogFile] = useState<FileItem | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { 
@@ -208,8 +211,29 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
 
   const allTransfers = transfers.filter(t => t.connId === connId);
 
+  const handleRename = async (file: FileItem) => {
+    const newName = prompt('请输入新名称', file.name);
+    if (!newName || newName === file.name) return;
+
+    const oldPath = file.path;
+    const newPath = path === '/' ? `/${newName}` : `${path}/${newName}`;
+    try {
+      await api.post(`/api/files/${connId}/rename`, { old_path: oldPath, new_path: newPath });
+      fetchFiles();
+    } catch (err: any) {
+      setError(err.response?.data?.error || '重命名失败');
+    }
+  };
+
+  const handleFileContextMenu = (e: React.MouseEvent, file: FileItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, file });
+  };
+
   return (
-    <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
+    <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}
+      onClick={() => setContextMenu(null)}>
       {/* Save Dialog */}
       {saveDialogFile && (
         <SaveDialog
@@ -261,11 +285,11 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
         onChange={handleFileSelect}
       />
 
-      {/* Path Navigation */}
-      <div className="px-2 py-1 flex items-center gap-1 text-xs" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
+      {/* Breadcrumb Path Navigation */}
+      <div className="px-2 py-1.5 flex items-center gap-1 text-xs overflow-x-auto whitespace-nowrap" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => handleNavigate('..')}
-          className="p-0.5 rounded hover:bg-opacity-50"
+          className="p-1 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
           style={{ color: 'var(--text-secondary)' }}
           title="返回上级"
         >
@@ -273,13 +297,37 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
         </button>
         <button
           onClick={() => handleNavigate('/')}
-          className="p-0.5 rounded hover:bg-opacity-50"
+          className="p-1 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
           style={{ color: path === '/' ? 'var(--accent)' : 'var(--text-secondary)' }}
           title="根目录"
         >
           <Home size={12} />
         </button>
-        <span style={{ color: 'var(--text-primary)' }}>{path}</span>
+        <div className="flex items-center gap-0.5 flex-1 min-w-0">
+          {path.split('/').filter(Boolean).map((segment, idx) => {
+            const buildPath = '/' + path.split('/').filter(Boolean).slice(0, idx + 1).join('/');
+            return (
+              <span key={buildPath} className="flex items-center gap-0.5 flex-shrink-0">
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <button
+                  onClick={() => { setPath(buildPath); fetchFiles(buildPath); }}
+                  className="px-1 py-0.5 rounded hover:bg-white/5 transition-colors"
+                  style={{ color: buildPath === path ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                  {segment}
+                </button>
+              </span>
+            );
+          })}
+          {path === '/' && <span style={{ color: 'var(--text-muted)' }}>/</span>}
+        </div>
+        <button
+          onClick={() => fetchFiles()}
+          className="p-1 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+          style={{ color: 'var(--text-secondary)' }}
+          title="刷新"
+        >
+          <RefreshCw size={12} />
+        </button>
       </div>
 
       {/* Error Display */}
@@ -310,6 +358,7 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
                 onClick={() => handleFileClick(file)}
                 onDownload={() => handleDownload(file)}
                 onDelete={() => handleDelete(file)}
+                onContextMenu={(e) => handleFileContextMenu(e, file)}
               />
             ))}
           </div>
@@ -364,22 +413,58 @@ export function EnhancedFileTreePanel({ connId: rawConnId }: Props) {
           </div>
         )}
       </div>
+
+      {/* File Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 py-1.5 rounded-lg shadow-lg"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            minWidth: '150px',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            backdropFilter: 'blur(8px)',
+          }}
+          onClick={() => setContextMenu(null)}
+        >
+          {!contextMenu.file.is_dir && (
+            <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={() => { handleDownload(contextMenu.file); setContextMenu(null); }}>
+              <Download size={12} /> 下载
+            </button>
+          )}
+          <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+            style={{ color: 'var(--text-primary)' }}
+            onClick={() => { handleRename(contextMenu.file); setContextMenu(null); }}>
+            <Edit2 size={12} /> 重命名
+          </button>
+          <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+            style={{ color: 'var(--danger)' }}
+            onClick={() => { handleDelete(contextMenu.file); setContextMenu(null); }}>
+            <Trash2 size={12} /> 删除
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function FileRow({ 
-  file, 
-  isSelected, 
-  onClick, 
-  onDownload, 
-  onDelete 
-}: { 
-  file: FileItem; 
+function FileRow({
+  file,
+  isSelected,
+  onClick,
+  onDownload,
+  onDelete,
+  onContextMenu
+}: {
+  file: FileItem;
   isSelected: boolean;
   onClick: () => void;
   onDownload: () => void;
   onDelete: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const [showActions, setShowActions] = useState(false);
 
@@ -390,6 +475,7 @@ function FileRow({
         background: isSelected ? 'var(--bg-tertiary)' : 'transparent',
       }}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >

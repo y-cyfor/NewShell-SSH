@@ -97,6 +97,7 @@ export function AddConnectionModal({ connection, onClose }: Props) {
               className="w-full px-3 py-2 rounded text-sm outline-none" style={inputStyle}>
               <option value="password">密码认证</option>
               <option value="key">密钥认证</option>
+              <option value="agent">SSH Agent</option>
             </select>
           </div>
 

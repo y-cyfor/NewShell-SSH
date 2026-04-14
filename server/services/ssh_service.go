@@ -3,13 +3,18 @@ package services
 import (
 	"fmt"
 	"io"
+	"log"
 	"net"
+	"os"
+	"runtime"
 	"sync"
+	"time"
 
 	"newshell-server/crypto_util"
 	"newshell-server/models"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 // SEC-2: 自定义HostKeyCallback - 记录主机密钥但不拒绝连接
@@ -27,6 +32,7 @@ type SSHSession struct {
 	Stdin   io.WriteCloser
 	Stdout  io.Reader
 	Stderr  io.Reader
+	stopKeepAlive chan struct{} // 用于停止心跳
 }
 
 var (
@@ -34,6 +40,40 @@ var (
 	poolMu      sync.RWMutex
 	encKey      []byte
 )
+
+// agentAuthMethod 连接到本地 SSH Agent 并返回认证方法
+func agentAuthMethod() (ssh.AuthMethod, error) {
+	var sockPath string
+	if runtime.GOOS == "windows" {
+		// Windows OpenSSH Agent 通过 named pipe 暴露，但 Go 标准库不直接支持
+		// 尝试通过 SSH_AUTH_SOCK 环境变量（Git Bash/WSL 等环境）
+		sockPath = os.Getenv("SSH_AUTH_SOCK")
+		if sockPath == "" {
+			return nil, fmt.Errorf("SSH agent not available: set SSH_AUTH_SOCK or use a Unix-compatible SSH agent on Windows")
+		}
+	} else {
+		sockPath = os.Getenv("SSH_AUTH_SOCK")
+		if sockPath == "" {
+			return nil, fmt.Errorf("SSH_AUTH_SOCK not set")
+		}
+	}
+
+	conn, err := net.Dial("unix", sockPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to SSH agent: %v", err)
+	}
+
+	agentClient := agent.NewClient(conn)
+	signers, err := agentClient.Signers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get signers from SSH agent: %v", err)
+	}
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no keys found in SSH agent")
+	}
+
+	return ssh.PublicKeys(signers...), nil
+}
 
 func SetEncryptionKey(key string) {
 	encKey = crypto_util.DeriveKey(key)
@@ -90,6 +130,12 @@ func Connect(connID string) (*SSHSession, error) {
 			return nil, fmt.Errorf("failed to parse private key: %v", err)
 		}
 		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	case "agent":
+		agentAuth, err := agentAuthMethod()
+		if err != nil {
+			return nil, fmt.Errorf("SSH agent auth failed: %v", err)
+		}
+		authMethods = append(authMethods, agentAuth)
 	default:
 		authMethods = append(authMethods, ssh.Password(password))
 	}
@@ -157,7 +203,11 @@ func Connect(connID string) (*SSHSession, error) {
 		Stdin:   stdin,
 		Stdout:  stdout,
 		Stderr:  stderr,
+		stopKeepAlive: make(chan struct{}),
 	}
+
+	// 启动 SSH Keep-Alive 心跳
+	go s.startKeepAlive(30 * time.Second)
 
 	sessionPool[connID] = s
 	return s, nil
@@ -179,6 +229,10 @@ func CloseSession(connID string) {
 	defer poolMu.Unlock()
 
 	if s, ok := sessionPool[connID]; ok {
+		// 停止 keep-alive 心跳
+		if s.stopKeepAlive != nil {
+			close(s.stopKeepAlive)
+		}
 		s.Session.Close()
 		s.Conn.Close()
 		delete(sessionPool, connID)
@@ -191,6 +245,25 @@ func ResizePTY(connID string, cols, rows int) error {
 		return err
 	}
 	return s.Session.WindowChange(rows, cols)
+}
+
+// startKeepAlive 发送 SSH keep-alive 请求防止连接超时断开
+func (s *SSHSession) startKeepAlive(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			_, _, err := s.Conn.SendRequest("keepalive@openssh.com", true, nil)
+			if err != nil {
+				log.Printf("[SSH KeepAlive] keepalive failed for session: %v", err)
+				return
+			}
+		case <-s.stopKeepAlive:
+			return
+		}
+	}
 }
 
 func Disconnect(connID string) {
@@ -231,6 +304,12 @@ func ConnectWithDetails(connID string, details ConnDetails) (*SSHSession, error)
 			return nil, fmt.Errorf("failed to parse private key: %v", err)
 		}
 		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	case "agent":
+		agentAuth, err := agentAuthMethod()
+		if err != nil {
+			return nil, fmt.Errorf("SSH agent auth failed: %v", err)
+		}
+		authMethods = append(authMethods, agentAuth)
 	default:
 		authMethods = append(authMethods, ssh.Password(details.Password))
 	}
@@ -298,7 +377,11 @@ func ConnectWithDetails(connID string, details ConnDetails) (*SSHSession, error)
 		Stdin:   stdin,
 		Stdout:  stdout,
 		Stderr:  stderr,
+		stopKeepAlive: make(chan struct{}),
 	}
+
+	// 启动 SSH Keep-Alive 心跳
+	go s.startKeepAlive(30 * time.Second)
 
 	sessionPool[connID] = s
 	return s, nil
@@ -365,6 +448,12 @@ func GetSSHClient(connID string) (*ssh.Client, error) {
 			return nil, fmt.Errorf("failed to parse private key: %v", err)
 		}
 		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	case "agent":
+		agentAuth, err := agentAuthMethod()
+		if err != nil {
+			return nil, fmt.Errorf("SSH agent auth failed: %v", err)
+		}
+		authMethods = append(authMethods, agentAuth)
 	default:
 		authMethods = append(authMethods, ssh.Password(password))
 	}

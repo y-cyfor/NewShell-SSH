@@ -3,20 +3,28 @@ import { TerminalTab } from '../types';
 
 let tabCounter = 0;
 
+// 连接状态跟踪
+export interface ConnectionStatus {
+  [connId: string]: 'connected' | 'disconnected' | 'connecting' | 'error';
+}
+
 interface TerminalState {
   tabs: TerminalTab[];
   activeTabId: string | null;
+  connectionStatus: ConnectionStatus;
   addTab: (connId: string, name: string) => string;
   addServerListTab: () => string;
   addAgentTab: (sessionId: string, connId: string, command?: string) => string;
   removeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   initDefaultTabs: () => void;
+  setConnectionStatus: (connId: string, status: ConnectionStatus[string]) => void;
 }
 
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   tabs: [],
   activeTabId: null,
+  connectionStatus: {},
 
   addTab: (connId, name) => {
     tabCounter++;
@@ -99,5 +107,11 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
         activeTabId: 'server-list-tab',
       };
     });
+  },
+
+  setConnectionStatus: (connId, status) => {
+    set((state) => ({
+      connectionStatus: { ...state.connectionStatus, [connId]: status },
+    }));
   },
 }));

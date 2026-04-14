@@ -12,6 +12,7 @@ import { useTerminalStore } from "../../stores/terminalStore";
 import { useThemeStore } from "../../stores/themeStore";
 import { useActivityStore } from "../../stores/activityStore";
 import { useGroupStore } from "../../stores/groupStore";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 const MIN_SIDEBAR_WIDTH = 340;
@@ -36,6 +37,12 @@ export function MainLayout() {
   const { loadConnections } = useConnectionStore();
   const { loadGroups } = useGroupStore();
   const theme = useThemeStore((s) => s.theme);
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts({
+    onToggleSettings: () => setShowSettings(!showSettings),
+    onToggleFileTree: () => setShowFileTree(!showFileTree),
+  });
 
   // Initialize tabs, connections, groups, and font settings on mount
   useEffect(() => {

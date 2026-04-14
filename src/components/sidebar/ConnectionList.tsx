@@ -14,11 +14,14 @@ import {
   Search,
   Cloud,
   HardDrive,
+  Wifi,
+  WifiOff,
+  Loader,
 } from 'lucide-react';
 
 export function ConnectionList() {
   const { connections, loadConnections, deleteConnection } = useConnectionStore();
-  const { addTab } = useTerminalStore();
+  const { addTab, connectionStatus } = useTerminalStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editConn, setEditConn] = useState<Connection | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -123,6 +126,14 @@ export function ConnectionList() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-medium truncate">{conn.name}</span>
+                        {/* 连接状态指示器 */}
+                        {connectionStatus[conn.id] && (
+                          <span title={{ connected: '已连接', connecting: '连接中', error: '连接错误', disconnected: '未连接' }[connectionStatus[conn.id]]}>
+                            {connectionStatus[conn.id] === 'connected' && <Wifi size={10} style={{ color: '#22c55e' }} />}
+                            {connectionStatus[conn.id] === 'connecting' && <Loader size={10} className="animate-spin" style={{ color: '#f59e0b' }} />}
+                            {connectionStatus[conn.id] === 'error' && <WifiOff size={10} style={{ color: '#ef4444' }} />}
+                          </span>
+                        )}
                         <span title={conn.synced ? '云端' : '本地'}>
                           {conn.synced ? (
                             <Cloud size={10} style={{ color: 'var(--accent)' }} />
